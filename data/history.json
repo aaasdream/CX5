@@ -1,0 +1,15 @@
+{
+  "records": {
+    "2026-08-17": {
+      "complete": true,
+      "max_priced": 1058000,
+      "median": 518000,
+      "min_priced": 138000,
+      "n": 204,
+      "n_priced": 189,
+      "p25": 368000,
+      "p75": 630000,
+      "raw_path": "raw/8891_2026-08-17.txt"
+    }
+  }
+}

@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.bak
+*.tmp
+
+# 個人看車清單／出價紀錄，不上傳公開 repo
+local/
+data/deals.json
