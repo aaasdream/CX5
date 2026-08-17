@@ -20,6 +20,7 @@ import sys
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 HISTORY_PATH = os.path.join(DATA_DIR, "history.json")
+NEWCAR_PATH = os.path.join(DATA_DIR, "newcar.json")
 OUT_PATH = os.path.join(BASE_DIR, "dashboard.html")
 # GitHub Pages 以 index.html 為進入點，內容相同
 INDEX_PATH = os.path.join(BASE_DIR, "index.html")
@@ -74,6 +75,13 @@ HTML_TEMPLATE = u"""<!DOCTYPE html>
   .warn td { color: #b9808c; }
   .empty { color: var(--muted); padding: 34px 0; text-align: center; }
   .foot { color: var(--muted); font-size: 11.5px; margin-top: 14px; line-height: 1.6; }
+  .newcar h2 { color: var(--blue); }
+  .gap { background: #101820; border: 1px solid #1d3247; border-radius: 8px;
+         padding: 12px 14px; margin-bottom: 14px; font-size: 13px; line-height: 1.8; }
+  .gap b { color: var(--blue); font-size: 15px; }
+  .none { color: var(--muted); font-style: normal; padding: 14px;
+          background: #1a1a24; border-radius: 8px; font-size: 12.5px; line-height: 1.7; }
+  .ok-i { color: var(--green); } .no-i { color: var(--red); }
 </style>
 </head>
 <body>
@@ -95,6 +103,18 @@ HTML_TEMPLATE = u"""<!DOCTYPE html>
 <div class="panel">
   <h2>目標車價走勢</h2>
   <div class="chart-wrap"><canvas id="chart"></canvas></div>
+</div>
+
+<div class="panel newcar">
+  <h2>新車對照 — 第三代 CX-5 25S Exclusive</h2>
+  <div class="gap" id="gap"></div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>車型</th><th>建議售價</th><th>360環景</th><th>通風座椅</th></tr></thead>
+    <tbody id="lineup"></tbody>
+  </table></div>
+  <h2 style="margin:20px 0 10px">網友回報成交價</h2>
+  <div id="dealsWrap"></div>
+  <div class="foot" id="disclaimer"></div>
 </div>
 
 <div class="panel warn" id="susPanel" style="display:none">
@@ -120,6 +140,7 @@ const TARGETS = __TARGETS__;      // 最新一日目標清單
 const TSERIES = __TSERIES__;      // 每日目標統計
 const MARKET  = __MARKET__;       // 每日全站統計
 const HOME    = __HOME__;
+const NEWCAR  = __NEWCAR__;       // 新車定價與網友回報成交價
 
 const wan = v => (v === null || v === undefined) ? '-' : (v / 10000).toFixed(1) + '萬';
 const w2  = v => (v === null || v === undefined) ? '-' : v.toFixed(1) + '萬';
@@ -168,6 +189,54 @@ if (SUS.length) {
     '</td><td>' + t.why + '</td></tr>').join('');
 }
 
+// ---- 新車對照 ----
+const NEWLIST = NEWCAR.target ? NEWCAR.target.list_price_wan : null;
+if (NEWCAR.target) {
+  const cheapest = prices.length ? prices[0] : null;
+  document.getElementById('gap').innerHTML =
+    '新車 <b>' + NEWLIST + '萬</b>（' + NEWCAR.target.model + '，' +
+    NEWCAR.target.meets_requirements + '）' +
+    (cheapest !== null
+      ? '　vs　中古最低 <b>' + cheapest + '萬</b>　→　價差 <b>' +
+        (NEWLIST - cheapest).toFixed(1) + '萬</b>'
+      : '') +
+    '<br><span style="color:var(--muted)">' + NEWCAR.target.note +
+    ' 首批交車 ' + NEWCAR.target.first_delivery + '。</span>';
+
+  document.getElementById('lineup').innerHTML = (NEWCAR.lineup || []).map(t =>
+    '<tr><td>' + t.trim + '</td><td>' + t.price_wan + '萬</td>' +
+    '<td class="' + (t.surround_view ? 'ok-i' : 'no-i') + '">' +
+    (t.surround_view ? '✓' : '✗') + '</td>' +
+    '<td class="' + (t.vent_seats ? 'ok-i' : 'no-i') + '">' +
+    (t.vent_seats ? '✓' : '✗') + '</td></tr>').join('');
+
+  const newGen = NEWCAR.deals_new_gen || [];
+  const prevGen = NEWCAR.deals_prev_gen || [];
+  let html = '';
+  if (!newGen.length) {
+    html += '<div class="none"><b style="color:var(--red)">第三代（你的目標車）：查無任何成交回報。</b><br>' +
+      '2026-08-18 才正式上市、9 月起才交車，目前沒有人領到車，' +
+      '網路上找得到的都是預售訂單而非成交價。</div>';
+  }
+  if (prevGen.length) {
+    html += '<div class="foot" style="margin:12px 0 6px">' +
+      '前一代 20S Select Plus 實際成交（僅供推估折讓幅度參考）：</div>' +
+      '<div class="tbl-wrap"><table><thead><tr><th>日期</th><th>車型</th>' +
+      '<th>定價</th><th>折讓</th><th>成交價</th><th>贈品</th><th>來源</th></tr></thead><tbody>' +
+      prevGen.map(d =>
+        '<tr><td>' + d.date + '</td><td>' + d.trim + '</td>' +
+        '<td>' + d.list_wan + '萬</td>' +
+        '<td class="cheap">-' + d.discount_wan + '萬</td>' +
+        '<td><b>' + d.deal_wan + '萬</b></td>' +
+        '<td style="white-space:normal;max-width:280px;font-size:11.5px;color:var(--muted)">' +
+        (d.extras || '-') + (d.note ? '<br>※ ' + d.note : '') + '</td>' +
+        '<td><a href="' + d.source + '" target="_blank" rel="noopener">PTT →</a></td></tr>'
+      ).join('') + '</tbody></table></div>';
+  }
+  document.getElementById('dealsWrap').innerHTML = html;
+  document.getElementById('disclaimer').textContent = NEWCAR.disclaimer || '';
+}
+
 // ---- 走勢圖 ----
 if (!TSERIES.length) {
   document.querySelector('.chart-wrap').innerHTML =
@@ -188,6 +257,11 @@ if (!TSERIES.length) {
         { label: '目標中位', data: TSERIES.map(r => r.median),
           borderColor: '#ff9f40', backgroundColor: '#ff9f40',
           borderWidth: 2.5, pointRadius: 4, tension: .25, fill: false },
+        { label: '新車 25S Exclusive ' + NEWLIST + '萬',
+          data: TSERIES.map(() => NEWLIST),
+          borderColor: '#60a5fa', backgroundColor: '#60a5fa',
+          borderWidth: 1.5, borderDash: [6, 4], pointRadius: 0,
+          tension: 0, fill: false },
       ],
     },
     options: {
@@ -222,6 +296,15 @@ document.getElementById('market').innerHTML = MARKET.slice().reverse().map(r =>
 def price_wan(text):
     m = re.match(r"^([0-9.]+)萬$", text or "")
     return float(m.group(1)) if m else None
+
+
+def load_newcar():
+    if not os.path.exists(NEWCAR_PATH):
+        return {}
+    try:
+        return json.load(io.open(NEWCAR_PATH, encoding="utf-8"))
+    except ValueError:
+        return {}
 
 
 def load_market():
@@ -266,9 +349,11 @@ def load_targets():
 def main():
     market = load_market()
     targets, series, sus, meta = load_targets()
+    newcar = load_newcar()
 
     html = HTML_TEMPLATE
     for key, value in [
+        ("__NEWCAR__", json.dumps(newcar, ensure_ascii=False)),
         ("__TARGETS__", json.dumps(targets, ensure_ascii=False)),
         ("__TSERIES__", json.dumps(series, ensure_ascii=False)),
         ("__MARKET__", json.dumps(market, ensure_ascii=False)),

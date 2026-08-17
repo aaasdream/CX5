@@ -1,0 +1,51 @@
+{
+  "updated": "2026-08-18",
+  "target": {
+    "model": "第三代 CX-5 25S Exclusive",
+    "list_price_wan": 108.9,
+    "launch_date": "2026-08-18",
+    "first_delivery": "2026-09",
+    "meets_requirements": "360環景 + 前座通風座椅 皆標配",
+    "note": "8/18 正式上市。全車系單一 2.5L 自然進氣。選色加價：魂動紅 +1.5 萬、雪白/鐵灰 +1.0 萬。"
+  },
+  "lineup": [
+    {"trim": "25S Elite", "price_wan": 94.9, "surround_view": false, "vent_seats": false},
+    {"trim": "25S Exclusive", "price_wan": 108.9, "surround_view": true, "vent_seats": true},
+    {"trim": "25S AWD Premium", "price_wan": 114.9, "surround_view": true, "vent_seats": true},
+    {"trim": "25S AWD Premium Plus", "price_wan": 116.9, "surround_view": true, "vent_seats": true}
+  ],
+  "deals_new_gen": [],
+  "deals_prev_gen": [
+    {
+      "date": "2025-10-27",
+      "trim": "2025 20S Select Plus（鋼鐵灰）",
+      "list_wan": 113.9,
+      "discount_wan": 16.5,
+      "deal_wan": 97.4,
+      "extras": "送延長保固至五年、避光墊、腳踏墊、後箱墊、E-tag、鑰匙皮套；自費行車紀錄器 9,000、隔熱紙 14,000",
+      "source": "https://www.ptt.cc/bbs/car/M.1761557904.A.8DB.html",
+      "note": "推文稱「神單」；同期台南回報 -15 萬"
+    },
+    {
+      "date": "2026-02-25",
+      "trim": "2026 20S Select Plus",
+      "list_wan": 112.9,
+      "discount_wan": 8.0,
+      "deal_wan": 104.9,
+      "extras": "無提及",
+      "source": "https://www.ptt.cc/bbs/car/M.1772012929.A.3A0.html",
+      "note": "業代開價；同串推文回報 -10 至 -18 萬不等"
+    },
+    {
+      "date": "2026-04-28",
+      "trim": "2026 20S Select Plus（白）",
+      "list_wan": 113.9,
+      "discount_wan": 15.0,
+      "deal_wan": 98.9,
+      "extras": "送 9H 鍍膜、2 年延長保固、避光墊、行李箱托盤、鑰匙皮套、防水腳踏墊",
+      "source": "https://www.ptt.cc/bbs/car/M.1777383192.A.0AA.html",
+      "note": "推文質疑折扣可能綁貸款條件"
+    }
+  ],
+  "disclaimer": "以上為 PTT 車板網友自行回報之購車菜單，未經查證，且多為業代報價而非發票金額。折讓金額不含貨物稅減免（最高 5 萬）與汰舊換新補助（5 萬），那兩項需符合報廢舊車等資格。新世代 25S Exclusive 於 2026-08-18 上市、9 月起交車，目前查無任何成交回報。"
+}

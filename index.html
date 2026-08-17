@@ -48,6 +48,13 @@
   .warn td { color: #b9808c; }
   .empty { color: var(--muted); padding: 34px 0; text-align: center; }
   .foot { color: var(--muted); font-size: 11.5px; margin-top: 14px; line-height: 1.6; }
+  .newcar h2 { color: var(--blue); }
+  .gap { background: #101820; border: 1px solid #1d3247; border-radius: 8px;
+         padding: 12px 14px; margin-bottom: 14px; font-size: 13px; line-height: 1.8; }
+  .gap b { color: var(--blue); font-size: 15px; }
+  .none { color: var(--muted); font-style: normal; padding: 14px;
+          background: #1a1a24; border-radius: 8px; font-size: 12.5px; line-height: 1.7; }
+  .ok-i { color: var(--green); } .no-i { color: var(--red); }
 </style>
 </head>
 <body>
@@ -69,6 +76,18 @@
 <div class="panel">
   <h2>目標車價走勢</h2>
   <div class="chart-wrap"><canvas id="chart"></canvas></div>
+</div>
+
+<div class="panel newcar">
+  <h2>新車對照 — 第三代 CX-5 25S Exclusive</h2>
+  <div class="gap" id="gap"></div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>車型</th><th>建議售價</th><th>360環景</th><th>通風座椅</th></tr></thead>
+    <tbody id="lineup"></tbody>
+  </table></div>
+  <h2 style="margin:20px 0 10px">網友回報成交價</h2>
+  <div id="dealsWrap"></div>
+  <div class="foot" id="disclaimer"></div>
 </div>
 
 <div class="panel warn" id="susPanel" style="display:none">
@@ -94,6 +113,7 @@ const TARGETS = [{"id": "4630347", "mileage_text": "1.8萬公里", "model": "20S
 const TSERIES = [{"date": "2026-08-17", "n": 8, "min": 86.8, "median": 89.8, "max": 93.8}, {"date": "2026-08-18", "n": 8, "min": 86.8, "median": 89.8, "max": 93.8}];      // 每日目標統計
 const MARKET  = [{"complete": true, "max_priced": 1058000, "median": 518000, "min_priced": 138000, "n": 204, "n_priced": 189, "p25": 368000, "p75": 630000, "raw_path": "raw/8891_2026-08-17.txt", "date": "2026-08-17"}, {"complete": true, "max_priced": 1058000, "median": 528000, "min_priced": 138000, "n": 200, "n_priced": 185, "p25": 369000, "p75": 638000, "raw_path": "raw/8891_2026-08-18.txt", "date": "2026-08-18"}];       // 每日全站統計
 const HOME    = "高雄";
+const NEWCAR  = {"updated": "2026-08-18", "target": {"model": "第三代 CX-5 25S Exclusive", "list_price_wan": 108.9, "launch_date": "2026-08-18", "first_delivery": "2026-09", "meets_requirements": "360環景 + 前座通風座椅 皆標配", "note": "8/18 正式上市。全車系單一 2.5L 自然進氣。選色加價：魂動紅 +1.5 萬、雪白/鐵灰 +1.0 萬。"}, "lineup": [{"trim": "25S Elite", "price_wan": 94.9, "surround_view": false, "vent_seats": false}, {"trim": "25S Exclusive", "price_wan": 108.9, "surround_view": true, "vent_seats": true}, {"trim": "25S AWD Premium", "price_wan": 114.9, "surround_view": true, "vent_seats": true}, {"trim": "25S AWD Premium Plus", "price_wan": 116.9, "surround_view": true, "vent_seats": true}], "deals_new_gen": [], "deals_prev_gen": [{"date": "2025-10-27", "trim": "2025 20S Select Plus（鋼鐵灰）", "list_wan": 113.9, "discount_wan": 16.5, "deal_wan": 97.4, "extras": "送延長保固至五年、避光墊、腳踏墊、後箱墊、E-tag、鑰匙皮套；自費行車紀錄器 9,000、隔熱紙 14,000", "source": "https://www.ptt.cc/bbs/car/M.1761557904.A.8DB.html", "note": "推文稱「神單」；同期台南回報 -15 萬"}, {"date": "2026-02-25", "trim": "2026 20S Select Plus", "list_wan": 112.9, "discount_wan": 8.0, "deal_wan": 104.9, "extras": "無提及", "source": "https://www.ptt.cc/bbs/car/M.1772012929.A.3A0.html", "note": "業代開價；同串推文回報 -10 至 -18 萬不等"}, {"date": "2026-04-28", "trim": "2026 20S Select Plus（白）", "list_wan": 113.9, "discount_wan": 15.0, "deal_wan": 98.9, "extras": "送 9H 鍍膜、2 年延長保固、避光墊、行李箱托盤、鑰匙皮套、防水腳踏墊", "source": "https://www.ptt.cc/bbs/car/M.1777383192.A.0AA.html", "note": "推文質疑折扣可能綁貸款條件"}], "disclaimer": "以上為 PTT 車板網友自行回報之購車菜單，未經查證，且多為業代報價而非發票金額。折讓金額不含貨物稅減免（最高 5 萬）與汰舊換新補助（5 萬），那兩項需符合報廢舊車等資格。新世代 25S Exclusive 於 2026-08-18 上市、9 月起交車，目前查無任何成交回報。"};       // 新車定價與網友回報成交價
 
 const wan = v => (v === null || v === undefined) ? '-' : (v / 10000).toFixed(1) + '萬';
 const w2  = v => (v === null || v === undefined) ? '-' : v.toFixed(1) + '萬';
@@ -142,6 +162,54 @@ if (SUS.length) {
     '</td><td>' + t.why + '</td></tr>').join('');
 }
 
+// ---- 新車對照 ----
+const NEWLIST = NEWCAR.target ? NEWCAR.target.list_price_wan : null;
+if (NEWCAR.target) {
+  const cheapest = prices.length ? prices[0] : null;
+  document.getElementById('gap').innerHTML =
+    '新車 <b>' + NEWLIST + '萬</b>（' + NEWCAR.target.model + '，' +
+    NEWCAR.target.meets_requirements + '）' +
+    (cheapest !== null
+      ? '　vs　中古最低 <b>' + cheapest + '萬</b>　→　價差 <b>' +
+        (NEWLIST - cheapest).toFixed(1) + '萬</b>'
+      : '') +
+    '<br><span style="color:var(--muted)">' + NEWCAR.target.note +
+    ' 首批交車 ' + NEWCAR.target.first_delivery + '。</span>';
+
+  document.getElementById('lineup').innerHTML = (NEWCAR.lineup || []).map(t =>
+    '<tr><td>' + t.trim + '</td><td>' + t.price_wan + '萬</td>' +
+    '<td class="' + (t.surround_view ? 'ok-i' : 'no-i') + '">' +
+    (t.surround_view ? '✓' : '✗') + '</td>' +
+    '<td class="' + (t.vent_seats ? 'ok-i' : 'no-i') + '">' +
+    (t.vent_seats ? '✓' : '✗') + '</td></tr>').join('');
+
+  const newGen = NEWCAR.deals_new_gen || [];
+  const prevGen = NEWCAR.deals_prev_gen || [];
+  let html = '';
+  if (!newGen.length) {
+    html += '<div class="none"><b style="color:var(--red)">第三代（你的目標車）：查無任何成交回報。</b><br>' +
+      '2026-08-18 才正式上市、9 月起才交車，目前沒有人領到車，' +
+      '網路上找得到的都是預售訂單而非成交價。</div>';
+  }
+  if (prevGen.length) {
+    html += '<div class="foot" style="margin:12px 0 6px">' +
+      '前一代 20S Select Plus 實際成交（僅供推估折讓幅度參考）：</div>' +
+      '<div class="tbl-wrap"><table><thead><tr><th>日期</th><th>車型</th>' +
+      '<th>定價</th><th>折讓</th><th>成交價</th><th>贈品</th><th>來源</th></tr></thead><tbody>' +
+      prevGen.map(d =>
+        '<tr><td>' + d.date + '</td><td>' + d.trim + '</td>' +
+        '<td>' + d.list_wan + '萬</td>' +
+        '<td class="cheap">-' + d.discount_wan + '萬</td>' +
+        '<td><b>' + d.deal_wan + '萬</b></td>' +
+        '<td style="white-space:normal;max-width:280px;font-size:11.5px;color:var(--muted)">' +
+        (d.extras || '-') + (d.note ? '<br>※ ' + d.note : '') + '</td>' +
+        '<td><a href="' + d.source + '" target="_blank" rel="noopener">PTT →</a></td></tr>'
+      ).join('') + '</tbody></table></div>';
+  }
+  document.getElementById('dealsWrap').innerHTML = html;
+  document.getElementById('disclaimer').textContent = NEWCAR.disclaimer || '';
+}
+
 // ---- 走勢圖 ----
 if (!TSERIES.length) {
   document.querySelector('.chart-wrap').innerHTML =
@@ -162,6 +230,11 @@ if (!TSERIES.length) {
         { label: '目標中位', data: TSERIES.map(r => r.median),
           borderColor: '#ff9f40', backgroundColor: '#ff9f40',
           borderWidth: 2.5, pointRadius: 4, tension: .25, fill: false },
+        { label: '新車 25S Exclusive ' + NEWLIST + '萬',
+          data: TSERIES.map(() => NEWLIST),
+          borderColor: '#60a5fa', backgroundColor: '#60a5fa',
+          borderWidth: 1.5, borderDash: [6, 4], pointRadius: 0,
+          tension: 0, fill: false },
       ],
     },
     options: {
