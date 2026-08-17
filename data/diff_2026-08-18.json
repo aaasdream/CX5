@@ -1,0 +1,50 @@
+{
+  "added": [],
+  "changed": [],
+  "from": "2026-08-17",
+  "n_from": 204,
+  "n_to": 200,
+  "removed": [
+    {
+      "id": "4743529",
+      "mileage_text": "10.1萬公里",
+      "model": "電動尾門BOSE音響CarPlay電動椅HUD車偏360環景 2.0L",
+      "price_text": "34.4萬",
+      "region": "台中市",
+      "title": "Mazda CX-5 2019款 電動尾門BOSE音響CarPlay電動椅HUD車偏360環景 2.0L",
+      "url": "https://auto.8891.com.tw/item/4743529",
+      "year": "2018年"
+    },
+    {
+      "id": "4743531",
+      "mileage_text": "10.3萬公里",
+      "model": "Boss環繞CarPly電尾門acc車偏360環景電動椅抬顯 2.0L",
+      "price_text": "35.7萬",
+      "region": "台中市",
+      "title": "Mazda CX-5 2019款 Boss環繞CarPly電尾門acc車偏360環景電動椅抬顯 2.0L",
+      "url": "https://auto.8891.com.tw/item/4743531",
+      "year": "2018年"
+    },
+    {
+      "id": "4743532",
+      "mileage_text": "2.2萬公里",
+      "model": "跟車置中360環景HUD電尾門BOSE環繞CarPly電動椅 2.0L",
+      "price_text": "51.1萬",
+      "region": "台中市",
+      "title": "Mazda CX-5 2022款 跟車置中360環景HUD電尾門BOSE環繞CarPly電動椅 2.0L",
+      "url": "https://auto.8891.com.tw/item/4743532",
+      "year": "2021年"
+    },
+    {
+      "id": "4770583",
+      "mileage_text": "3.5萬公里",
+      "model": "SKY-G 2WD環景頂級型 2.0L",
+      "price_text": "37.0萬",
+      "region": "桃園市",
+      "title": "Mazda CX-5 2019款 SKY-G 2WD環景頂級型 2.0L",
+      "url": "https://auto.8891.com.tw/item/4770583",
+      "year": "2018年"
+    }
+  ],
+  "to": "2026-08-18"
+}

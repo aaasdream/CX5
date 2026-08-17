@@ -1,0 +1,153 @@
+{
+  "criteria": "2025+ 年式 20S Select Plus（360環景 + 前座通風標配）",
+  "date": "2026-08-18",
+  "home_region": "高雄",
+  "n_scanned": 200,
+  "suspicious": [
+    {
+      "id": "4758973",
+      "mileage_text": "5000公里",
+      "model": "20S Select 2.0L",
+      "price_text": "35.8萬",
+      "region": "桃園市",
+      "title": "Mazda CX-5 2025款 20S Select 2.0L",
+      "url": "https://auto.8891.com.tw/item/4758973",
+      "why": "2024年式僅 35.8萬",
+      "year": "2024年"
+    },
+    {
+      "id": "4763899",
+      "mileage_text": "5000公里",
+      "model": "25T AWD GT Premium 2.0L",
+      "price_text": "35.8萬",
+      "region": "桃園市",
+      "title": "Mazda CX-5 2025款 25T AWD GT Premium 2.0L",
+      "url": "https://auto.8891.com.tw/item/4763899",
+      "why": "2024年式僅 35.8萬",
+      "year": "2024年"
+    },
+    {
+      "id": "4764845",
+      "mileage_text": "1萬公里",
+      "model": "20S 淬鍊版 2.0L",
+      "price_text": "40.8萬",
+      "region": "桃園市",
+      "title": "Mazda CX-5 2025款 20S 淬鍊版 2.0L",
+      "url": "https://auto.8891.com.tw/item/4764845",
+      "why": "2024年式僅 40.8萬",
+      "year": "2024年"
+    },
+    {
+      "id": "4767517",
+      "mileage_text": "1萬公里",
+      "model": "20S 淬鍊版 2.0L",
+      "price_text": "45.8萬",
+      "region": "桃園市",
+      "title": "Mazda CX-5 2025款 20S 淬鍊版 2.0L",
+      "url": "https://auto.8891.com.tw/item/4767517",
+      "why": "2024年式僅 45.8萬",
+      "year": "2024年"
+    },
+    {
+      "id": "4771915",
+      "mileage_text": "8000公里",
+      "model": "CX5 2.0L",
+      "price_text": "33.8萬",
+      "region": "新北市",
+      "title": "Mazda CX-5 2025款 CX5 2.0L",
+      "url": "https://auto.8891.com.tw/item/4771915",
+      "why": "2024年式僅 33.8萬",
+      "year": "2024年"
+    }
+  ],
+  "targets": [
+    {
+      "id": "4630347",
+      "mileage_text": "1.8萬公里",
+      "model": "20S Select Plus 2.0L",
+      "price_text": "86.8萬",
+      "region": "高雄市",
+      "title": "Mazda CX-5 2025款 20S Select Plus 2.0L",
+      "url": "https://auto.8891.com.tw/item/4630347",
+      "why": "2025 Select Plus",
+      "year": "2025年"
+    },
+    {
+      "id": "4760706",
+      "mileage_text": "2.7萬公里",
+      "model": "20S Select Plus 2.0L",
+      "price_text": "87.8萬",
+      "region": "台中市",
+      "title": "Mazda CX-5 2025款 20S Select Plus 2.0L",
+      "url": "https://auto.8891.com.tw/item/4760706",
+      "why": "2025 Select Plus",
+      "year": "2025年"
+    },
+    {
+      "id": "4757470",
+      "mileage_text": "1萬公里",
+      "model": "20S Select Plus 2.0L",
+      "price_text": "88.8萬",
+      "region": "台中市",
+      "title": "Mazda CX-5 2025款 20S Select Plus 2.0L",
+      "url": "https://auto.8891.com.tw/item/4757470",
+      "why": "2025 Select Plus",
+      "year": "2025年"
+    },
+    {
+      "id": "4754365",
+      "mileage_text": "8000公里",
+      "model": "20S Select Plus 2.0L",
+      "price_text": "89.8萬",
+      "region": "台北市",
+      "title": "Mazda CX-5 2025款 20S Select Plus 2.0L",
+      "url": "https://auto.8891.com.tw/item/4754365",
+      "why": "2025 Select Plus",
+      "year": "2025年"
+    },
+    {
+      "id": "4754481",
+      "mileage_text": "5000公里",
+      "model": "20S Select Plus 2.0L",
+      "price_text": "89.8萬",
+      "region": "台北市",
+      "title": "Mazda CX-5 2025款 20S Select Plus 2.0L",
+      "url": "https://auto.8891.com.tw/item/4754481",
+      "why": "2025 Select Plus",
+      "year": "2025年"
+    },
+    {
+      "id": "4760642",
+      "mileage_text": "3971公里",
+      "model": "20S Select Plus 2.0L",
+      "price_text": "89.8萬",
+      "region": "台中市",
+      "title": "Mazda CX-5 2025款 20S Select Plus 2.0L",
+      "url": "https://auto.8891.com.tw/item/4760642",
+      "why": "2025 Select Plus",
+      "year": "2025年"
+    },
+    {
+      "id": "4761110",
+      "mileage_text": "7000公里",
+      "model": "20S Select Plus 2.0L",
+      "price_text": "89.8萬",
+      "region": "高雄市",
+      "title": "Mazda CX-5 2025款 20S Select Plus 2.0L",
+      "url": "https://auto.8891.com.tw/item/4761110",
+      "why": "2025 Select Plus",
+      "year": "2025年"
+    },
+    {
+      "id": "4771152",
+      "mileage_text": "7121公里",
+      "model": "20S Select Plus 2.0L",
+      "price_text": "93.8萬",
+      "region": "台南市",
+      "title": "Mazda CX-5 2025款 20S Select Plus 2.0L",
+      "url": "https://auto.8891.com.tw/item/4771152",
+      "why": "2025 Select Plus",
+      "year": "2025年"
+    }
+  ]
+}
