@@ -71,6 +71,17 @@ def export_data(conn: sqlite3.Connection, as_of: str | None = None) -> dict:
 
     wins = [t for t in trades if t["side"] == "SELL" and (t["realized_pnl"] or 0) > 0]
     closed = [t for t in trades if t["side"] == "SELL"]
+    equity_path = [float(s["total_equity"]) for s in snaps]
+    peak = max(equity_path, default=val["initial_cash"])
+    running_peak = val["initial_cash"]
+    drawdowns = []
+    for equity in equity_path:
+        running_peak = max(running_peak, equity)
+        drawdowns.append((equity / running_peak - 1) * 100 if running_peak else 0.0)
+    current_drawdown = ((val["total_equity"] / peak - 1) * 100 if peak else 0.0)
+    record_dates = {r["date"] for r in snaps}
+    for table in ("briefs", "decisions", "news", "trades"):
+        record_dates.update(r["date"] for r in conn.execute(f"SELECT DISTINCT date FROM {table}"))
 
     return {
         "generated_at": dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -86,6 +97,12 @@ def export_data(conn: sqlite3.Connection, as_of: str | None = None) -> dict:
             "cum_return_pct": val["cum_return_pct"],
             "cash_pct": val["cash_pct"],
             "start_date": db.get_meta(conn, "start_date", config.START_DATE),
+            "end_date": config.END_DATE,
+            "knockout_equity": 250_000,
+            "peak_equity": peak,
+            "current_drawdown_pct": current_drawdown,
+            "max_drawdown_pct": min(drawdowns, default=0.0),
+            "record_days": len(record_dates),
             "trade_count": len(trades),
             "closed_count": len(closed),
             "win_count": len(wins),

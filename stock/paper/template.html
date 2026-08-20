@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>紙上台股實驗室 · CX5</title>
+<title>ChatGPT 台股三個月績效追蹤</title>
 <style>
 :root{
   --bg:#0d1117; --panel:#151b23; --panel2:#1c232d; --line:#2a323d;
@@ -43,6 +43,31 @@ header{display:flex;justify-content:space-between;align-items:flex-end;
   border:1px solid var(--line);background:var(--panel2);color:var(--dim);
   letter-spacing:.5px}
 .badge.sim{border-color:var(--warn);color:var(--warn)}
+
+.quick-nav{position:sticky;top:0;z-index:5;display:flex;gap:6px;overflow-x:auto;
+  margin:0 -4px 22px;padding:9px 4px;background:color-mix(in srgb,var(--bg) 92%,transparent);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.quick-nav a{white-space:nowrap;padding:5px 10px;border-radius:7px;color:var(--dim);
+  font-size:12px;border:1px solid transparent}
+.quick-nav a:hover{color:var(--fg);border-color:var(--line);background:var(--panel);text-decoration:none}
+
+.contest{display:grid;grid-template-columns:minmax(260px,1.4fr) minmax(240px,1fr);
+  gap:14px;margin-bottom:20px}
+.contest .panel{height:100%}
+.contest-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.contest-title{font-size:18px;font-weight:650;line-height:1.35}
+.contest-status{font-size:11px;color:var(--accent);border:1px solid var(--accent);
+  border-radius:99px;padding:2px 8px;white-space:nowrap}
+.progress-track,.allocation-track{height:9px;border-radius:99px;background:var(--panel2);
+  overflow:hidden;margin:14px 0 7px}
+.progress-track i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#8b5cf6)}
+.allocation-track{display:flex;height:12px}
+.allocation-track .invested{background:var(--accent)}
+.allocation-track .cash{background:var(--warn)}
+.contest-meta{display:flex;justify-content:space-between;gap:8px;color:var(--dim);font-size:12px}
+.risk-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.risk-grid .v{font-size:18px;font-weight:650;margin-top:2px}
+.risk-grid .l{font-size:11px;color:var(--dim);letter-spacing:.5px}
 
 section{margin-bottom:32px}
 .panel{background:var(--panel);border:1px solid var(--line);
@@ -98,6 +123,11 @@ tbody tr:hover{background:var(--panel2)}
 .tag.sell{color:var(--down);border-color:var(--down)}
 .tag.hold,.tag.watch,.tag.pass{color:var(--dim)}
 .scroll{overflow-x:auto}
+.snapshot-details summary{cursor:pointer;font-weight:600}
+.archive-tools{display:flex;gap:10px;align-items:center;margin:-5px 0 12px;flex-wrap:wrap}
+.archive-search{min-width:min(360px,100%);flex:1;background:var(--panel);color:var(--fg);
+  border:1px solid var(--line);border-radius:8px;padding:9px 11px;font:inherit}
+.archive-search:focus{outline:2px solid color-mix(in srgb,var(--accent) 45%,transparent);border-color:var(--accent)}
 
 /* 簡報 */
 .brief{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
@@ -143,6 +173,10 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--line);
 .disclaimer{background:var(--panel2);border:1px solid var(--line);
   border-left:3px solid var(--warn);border-radius:6px;padding:12px 14px;
   font-size:12.5px;color:var(--dim);margin-bottom:24px}
+@media(max-width:720px){
+  .wrap{padding:14px 12px 44px}.contest{grid-template-columns:1fr}.kpi .value{font-size:19px}
+  .quick-nav{margin-bottom:16px}.holds{grid-template-columns:1fr}.brief{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
@@ -165,8 +199,8 @@ const nl = s => esc(s).replace(/\n/g, '<br>');
 
 // ── 折線圖：淨值 vs 大盤（都轉成累積報酬 %）────────────────
 function equityChart(snaps) {
-  if (!snaps || snaps.length < 2) {
-    return `<div class="empty">累積至少兩個交易日的快照後，這裡會出現淨值曲線</div>`;
+  if (!snaps || !snaps.length) {
+    return `<div class="empty">第一份績效快照建立後，這裡會出現淨值曲線</div>`;
   }
   const W = 1000, H = 260, P = {t: 14, r: 54, b: 26, l: 8};
   const me = snaps.map(s => s.cum_return_pct ?? 0);
@@ -228,6 +262,43 @@ function spark(code) {
 }
 
 // ── 區塊 ────────────────────────────────────────────────
+function contestOverview() {
+  const a = D.account;
+  const start = new Date(`${a.start_date}T00:00:00`);
+  const end = new Date(`${a.end_date}T00:00:00`);
+  const asOf = new Date(`${D.as_of}T00:00:00`);
+  const day = 86400000;
+  const totalDays = Math.max(1, Math.round((end - start) / day) + 1);
+  const elapsed = Math.max(0, Math.min(totalDays, Math.round((asOf - start) / day) + 1));
+  const progress = elapsed / totalDays * 100;
+  const remaining = Math.max(0, Math.round((end - asOf) / day));
+  const phase = asOf < start ? '賽前準備' : asOf > end ? '賽事結束' : '賽事進行中';
+  const exposure = a.total_equity ? a.positions_value / a.total_equity * 100 : 0;
+  const cash = Math.max(0, 100 - exposure);
+  const safety = a.total_equity - a.knockout_equity;
+  return `<div class="contest">
+    <div class="panel">
+      <div class="contest-top">
+        <div><div class="contest-title">三個月績效追蹤</div>
+          <div class="sub">${esc(a.start_date)} → ${esc(a.end_date)} · 每日持續累積</div></div>
+        <span class="contest-status">${phase}</span>
+      </div>
+      <div class="progress-track" aria-label="賽程進度 ${progress.toFixed(1)}%"><i style="width:${progress.toFixed(1)}%"></i></div>
+      <div class="contest-meta"><span>第 ${elapsed} / ${totalDays} 天</span><span>${remaining} 天後結算</span></div>
+      <div class="allocation-track" aria-label="資產配置：持股 ${exposure.toFixed(1)}%，現金 ${cash.toFixed(1)}%">
+        <span class="invested" style="width:${exposure.toFixed(1)}%"></span><span class="cash" style="width:${cash.toFixed(1)}%"></span>
+      </div>
+      <div class="contest-meta"><span>持股 ${exposure.toFixed(1)}%</span><span>現金 ${cash.toFixed(1)}%</span></div>
+    </div>
+    <div class="panel risk-grid">
+      <div><div class="l">距淘汰線</div><div class="v ${cls(safety)}">${n0(safety)}</div></div>
+      <div><div class="l">歷史高點</div><div class="v">${n0(a.peak_equity)}</div></div>
+      <div><div class="l">目前回撤</div><div class="v ${cls(a.current_drawdown_pct)}">${pct(a.current_drawdown_pct)}</div></div>
+      <div><div class="l">最大回撤</div><div class="v ${cls(a.max_drawdown_pct)}">${pct(a.max_drawdown_pct)}</div></div>
+    </div>
+  </div>`;
+}
+
 function kpis() {
   const a = D.account;
   const vs = (a.cum_return_pct != null && a.twii_cum_pct != null)
@@ -247,7 +318,25 @@ function kpis() {
         a.closed_count ? `平倉 ${a.closed_count} 次 · 勝率 ${a.win_rate_pct?.toFixed(0) ?? '—'}%`
                        : '尚無平倉', cls(a.realized_pnl_cum))}
     ${card('累計交易成本', n0(a.fees_cum), `${a.trade_count} 筆成交`)}
+    ${card('紀錄天數', n0(a.record_days), '決策、觀察與績效快照')}
   </div>`;
+}
+
+function snapshotsTable() {
+  if (!D.snapshots.length) return `<div class="empty">尚無每日績效快照</div>`;
+  return `<details class="panel snapshot-details"><summary>展開每日績效明細（${D.snapshots.length} 日）</summary>
+    <div class="scroll" style="margin-top:12px"><table>
+      <thead><tr><th>日期</th><th class="num">總資產</th><th class="num">單日</th>
+        <th class="num">累積</th><th class="num">大盤同期</th><th class="num">現金</th>
+        <th class="num">持股市值</th><th class="num">累計費稅</th><th>備註</th></tr></thead>
+      <tbody>${[...D.snapshots].reverse().map(s => `<tr>
+        <td class="mono dim">${esc(s.date)}</td><td class="num">${n0(s.total_equity)}</td>
+        <td class="num ${cls(s.day_return_pct)}">${pct(s.day_return_pct)}</td>
+        <td class="num ${cls(s.cum_return_pct)}">${pct(s.cum_return_pct)}</td>
+        <td class="num ${cls(s.twii_cum_pct)}">${pct(s.twii_cum_pct)}</td>
+        <td class="num">${n0(s.cash)}</td><td class="num">${n0(s.positions_value)}</td>
+        <td class="num dim">${n0(s.fees_cum)}</td><td>${esc(s.note || '')}</td>
+      </tr>`).join('')}</tbody></table></div></details>`;
 }
 
 function holdings() {
@@ -470,12 +559,18 @@ function archiveBlock() {
 document.getElementById('app').innerHTML = `
 <header>
   <div>
-    <h1>紙上台股實驗室</h1>
-    <div class="sub">每日新聞與總經判斷驅動的虛擬台股帳本 ·
+    <h1>ChatGPT 台股三個月績效追蹤</h1>
+    <div class="sub">每日決策、持倉與績效持續累積的公開虛擬帳本 ·
       資料截至 ${esc(D.as_of)} · 產生於 ${esc(D.generated_at)}</div>
   </div>
   <div><span class="badge sim">模擬帳戶 · 非真實交易</span></div>
 </header>
+
+<nav class="quick-nav" aria-label="頁面導覽">
+  <a href="#performance">績效總覽</a><a href="#holdings">持倉</a>
+  <a href="#decisions">決策</a><a href="#trades">成交</a>
+  <a href="#market">市場</a><a href="#events">重要日期</a><a href="#journal">每日紀錄</a>
+</nav>
 
 <div class="disclaimer">
   本頁是一場公開記錄的<strong>模擬實驗</strong>：初始 ${n0(D.account.initial_cash)} 元為虛擬資金，
@@ -488,34 +583,38 @@ document.getElementById('app').innerHTML = `
   帳本可用 <code>audit.py</code> 從公開資料完整重算驗證。
 </div>
 
-<section>${kpis()}</section>
+<section id="performance">
+  ${contestOverview()}
+  ${kpis()}
+</section>
 
 <section>
   <h2>淨值曲線 vs 加權指數</h2>
   <div class="chartbox">${equityChart(D.snapshots)}</div>
+  <div style="margin-top:10px">${snapshotsTable()}</div>
 </section>
 
-<section>
+<section id="holdings">
   <h2>持倉與投資論點</h2>
   ${holdings()}
 </section>
 
-<section>
+<section id="brief">
   <h2>今日簡報</h2>
   ${briefBlock()}
 </section>
 
-<section>
+<section id="decisions">
   <h2>決策紀錄</h2>
   ${decisionsTable()}
 </section>
 
-<section>
+<section id="trades">
   <h2>成交明細</h2>
   ${tradesTable()}
 </section>
 
-<section>
+<section id="market">
   <h2>市場儀表板</h2>
   ${macroBlock()}
 </section>
@@ -535,17 +634,19 @@ document.getElementById('app').innerHTML = `
   ${playbookBlock()}
 </section>
 
-<section>
+<section id="events">
   <h2>事件行事曆</h2>
   ${eventsBlock()}
 </section>
 
-<section>
+<section id="journal">
   <h2>每日紀錄存檔 · 逐日回看</h2>
-  <div class="sub" style="margin:-6px 0 12px">
-    這一段會隨實驗一天天長長。每個日期展開後是當天的完整判斷：
-    盤勢研判、做了什麼、為什麼做、當天讀到的新聞。判斷都寫在結果發生之前。
+  <div class="archive-tools">
+    <input id="archiveSearch" class="archive-search" type="search"
+      placeholder="搜尋日期、股票、決策或新聞…" aria-label="搜尋每日紀錄">
+    <span class="sub">共 ${D.account.record_days} 個紀錄日</span>
   </div>
+  <div class="sub" style="margin:-4px 0 12px">每個日期展開後都是當天完整判斷，並隨實驗一天天增長。</div>
   ${archiveBlock()}
 </section>
 
@@ -556,6 +657,13 @@ document.getElementById('app').innerHTML = `
   原始資料另存為 <a href="data.json">data.json</a>。<br>
   這是 <a href="https://github.com/aaasdream/CX5">aaasdream/CX5</a> 底下的實驗專案。
 </footer>`;
+
+document.getElementById('archiveSearch')?.addEventListener('input', event => {
+  const query = event.target.value.trim().toLocaleLowerCase('zh-Hant');
+  document.querySelectorAll('#journal details.panel').forEach(item => {
+    item.hidden = query && !item.textContent.toLocaleLowerCase('zh-Hant').includes(query);
+  });
+});
 </script>
 </body>
 </html>

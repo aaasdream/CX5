@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-20 23:24:16",
+  "generated_at": "2026-08-20 23:27:56",
   "as_of": "2026-08-20",
   "account": {
     "initial_cash": 500000.0,
@@ -12,6 +12,12 @@
     "cum_return_pct": 0.0,
     "cash_pct": 100.0,
     "start_date": "2026-08-21",
+    "end_date": "2026-11-20",
+    "knockout_equity": 250000,
+    "peak_equity": 500000.0,
+    "current_drawdown_pct": 0.0,
+    "max_drawdown_pct": 0.0,
+    "record_days": 1,
     "trade_count": 0,
     "closed_count": 0,
     "win_count": 0,

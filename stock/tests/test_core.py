@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from stock.paper import db, fees, journal, ledger, market
+from stock.paper import db, fees, journal, ledger, market, report
 
 
 class ContestRulesTest(unittest.TestCase):
@@ -52,6 +52,13 @@ class ContestRulesTest(unittest.TestCase):
         self.assertEqual(row["field"], "target_price")
         self.assertIsNone(row["old_value"])
         self.assertEqual(row["new_value"], "1100")
+
+    def test_report_contains_three_month_performance_metadata(self):
+        data = report.export_data(self.conn, as_of="2026-08-21")
+        self.assertEqual(data["account"]["start_date"], "2026-08-21")
+        self.assertEqual(data["account"]["end_date"], "2026-11-20")
+        self.assertEqual(data["account"]["knockout_equity"], 250_000)
+        self.assertEqual(data["account"]["max_drawdown_pct"], 0)
 
     @patch("stock.paper.market.realtime")
     def test_live_buy_records_timestamp_and_source(self, realtime):
