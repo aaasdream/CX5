@@ -60,6 +60,9 @@ class ContestRulesTest(unittest.TestCase):
         self.assertEqual(data["account"]["knockout_equity"], 250_000)
         self.assertEqual(data["account"]["max_drawdown_pct"], 0)
 
+    def test_public_site_uses_stock_gpt_path(self):
+        self.assertEqual(report.config.SITE_DIR.name, "stock_GPT")
+
     @patch("stock.paper.market.realtime")
     def test_live_buy_records_timestamp_and_source(self, realtime):
         realtime.return_value = {"price": 1000.0, "name": "台積電",

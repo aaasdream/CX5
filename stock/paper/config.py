@@ -9,8 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent          # .../CX5/stock
 DB_PATH = Path(os.environ.get("CX5_STOCK_DB", ROOT / "db" / "portfolio.db"))
-SITE_DIR = ROOT                                         # index.html 直接放 stock/ 底下
-                                                        # → https://aaasdream.github.io/CX5/stock/
+SITE_DIR = ROOT.parent / "stock_GPT"                   # GitHub Pages 正式發布目錄
+                                                        # → https://aaasdream.github.io/CX5/stock_GPT/
 
 # ── 帳戶 ────────────────────────────────────────────────────────────
 INITIAL_CASH = 500_000.0      # 新台幣

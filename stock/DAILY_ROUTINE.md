@@ -125,7 +125,7 @@ python audit.py --no-network # 快速自我稽核；有交易的日子跑完整�
 
 ```bash
 cd C:\Aking\STOCK_CHATGPT\CX5
-git add stock/
+git add stock/ stock_GPT/
 git commit -m "YYYY-MM-DD 盤後：<一句話摘要>"
 git push origin main
 ```

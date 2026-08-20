@@ -3,7 +3,7 @@
 一場公開記錄的**台股虛擬交易實驗**：初始資金新台幣 50 萬（虛擬），為期三個月
 （2026-08-21 至 2026-11-21），由 AI 依每日新聞與總經數據自主決策並記帳。
 
-**成果頁面 → https://aaasdream.github.io/CX5/stock/**
+**成果頁面 → https://aaasdream.github.io/CX5/stock_GPT/**
 
 > 所有買賣都只寫進資料庫，沒有任何真實下單、沒有真實資金流。
 > 頁面內容是 AI 的推論紀錄，**不構成投資建議**。
@@ -130,6 +130,10 @@ stock/
     journal.py        新聞、簡報、決策、論點、行事曆
     report.py         匯出 JSON 與產生網頁
     template.html     頁面模板
+
+stock_GPT/
+  index.html          GitHub Pages 正式績效頁
+  data.json           網頁使用的完整公開資料
 ```
 
 ## 資料來源
