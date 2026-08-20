@@ -30,12 +30,18 @@ def add_thesis(conn: sqlite3.Connection, code: str, date: str, title: str,
 
 
 def update_thesis(conn: sqlite3.Connection, thesis_id: int, date: str, **fields) -> None:
-    """更新論點內容（例如調整目標價、記下論點鬆動的跡象）。"""
+    """更新論點，並追加每個欄位的修改前後值。"""
     allowed = {"title", "rationale", "catalysts", "risks", "target_price",
                "stop_loss", "horizon", "conviction", "status", "outcome"}
+    current = conn.execute("SELECT * FROM theses WHERE id=?", (thesis_id,)).fetchone()
+    if not current:
+        raise ValueError(f"找不到論點 #{thesis_id}")
     sets, vals = [], []
     for k, v in fields.items():
         if k in allowed and v is not None:
+            conn.execute(
+                "INSERT INTO thesis_revisions(thesis_id,date,field,old_value,new_value) "
+                "VALUES (?,?,?,?,?)", (thesis_id, date, k, current[k], v))
             sets.append(f"{k}=?")
             vals.append(v)
     if not sets:
@@ -81,15 +87,16 @@ def news(conn: sqlite3.Connection, date: str | None = None, limit: int = 50) -> 
 
 # ── 每日簡報 ────────────────────────────────────────────────────────
 def set_brief(conn: sqlite3.Connection, date: str, **fields) -> None:
-    """寫入/覆蓋當日簡報。欄位見 db.SCHEMA 的 briefs 表。"""
+    """寫入當日簡報；同日期內容不得覆寫。"""
     cols = ["macro", "tw_market", "ai_sector", "crypto", "key_events",
             "stance", "actions", "outlook"]
     vals = [fields.get(c) for c in cols]
-    updates = ", ".join(f"{c}=COALESCE(excluded.{c}, briefs.{c})" for c in cols)
-    conn.execute(
-        f"INSERT INTO briefs(date,{','.join(cols)}) VALUES (?,?,?,?,?,?,?,?,?) "
-        f"ON CONFLICT(date) DO UPDATE SET {updates}",
-        (date, *vals))
+    try:
+        conn.execute(
+            f"INSERT INTO briefs(date,{','.join(cols)}) VALUES (?,?,?,?,?,?,?,?,?)",
+            (date, *vals))
+    except sqlite3.IntegrityError as exc:
+        raise ValueError(f"{date} 簡報已存在；禁止覆寫，修正請新增 correction 紀錄") from exc
     conn.commit()
 
 

@@ -3,7 +3,7 @@
 每個交易日 10:00 執行。這份文件是給「每天早上那個沒有記憶的自己」看的 ——
 排程任務每次都是全新 session，不記得昨天想過什麼，所有脈絡都必須從資料庫與這份文件取得。
 
-工作目錄：`C:\Aking\Stock\CX5\stock`
+工作目錄：`C:\Aking\STOCK_CHATGPT\CX5\stock`
 
 ---
 
@@ -116,6 +116,7 @@ SELECT * FROM playbook WHERE status='UNTESTED';
 
 ```bash
 python pt.py mark            # 寫入當日淨值快照
+python pt.py record          # 產生不可覆寫每日紀錄與 CSV
 python pt.py report          # 產生 index.html 與 data.json
 python audit.py --no-network # 快速自我稽核；有交易的日子跑完整版
 ```
@@ -123,7 +124,7 @@ python audit.py --no-network # 快速自我稽核；有交易的日子跑完整�
 `audit.py` 任何一項 FAIL 都要先查清楚再提交，不要把壞掉的帳推上去。
 
 ```bash
-cd C:\Aking\Stock\CX5
+cd C:\Aking\STOCK_CHATGPT\CX5
 git add stock/
 git commit -m "YYYY-MM-DD 盤後：<一句話摘要>"
 git push origin main
@@ -134,8 +135,8 @@ git push origin main
 ## 注意事項
 
 - **成交價抓不到就不交易**，不要想辦法繞過。那是設計，不是故障。
-- **風控被擋下時先想清楚再 `--force`。** 覆蓋的事實會寫進交易紀錄，事後看得見。
-- 單一個股 ≤ 25%、單筆進場 ≤ 15%、現金 ≥ 10%。
+- **風控被擋下就不交易。** 正式競賽不提供覆蓋參數。
+- 單一個股 ≤ 12%、單筆進場 ≤ 10%、常態現金 ≥ 20%。
 - 帳戶跌破 250,000 就出局。**這條規則的意義是：破產風險不能用報酬率補償。**
   三個月約 60 個交易日，市場年化波動 36%，先確保活著，判斷才有機會累積。
 - 誠實優先於好看。判斷錯了就寫錯了，補跑遲到了就寫遲到了。

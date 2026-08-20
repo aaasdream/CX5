@@ -105,10 +105,6 @@ def realtime(code: str) -> dict | None:
             return None
         rt, info = r["realtime"], r.get("info", {})
         price = rt.get("latest_trade_price")
-        if price in (None, "-", ""):          # 尚未成交（例如剛開盤）就退回最佳買賣價
-            bid = (rt.get("best_bid_price") or [None])[0]
-            ask = (rt.get("best_ask_price") or [None])[0]
-            price = bid or ask
         if price in (None, "-", ""):
             return None
         return {

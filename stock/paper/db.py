@@ -10,7 +10,7 @@ from pathlib import Path
 
 from . import config
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 3
 
 SCHEMA = """
 -- 帳戶層級的 key/value（初始資金、起始日、schema 版本…）
@@ -21,11 +21,7 @@ CREATE TABLE IF NOT EXISTS meta (
 
 -- 每一筆成交。這張表是唯一的真相來源，positions/snapshots 都能由它重建。
 --
--- fill_mode 是可稽核性的關鍵欄位，記錄這筆是怎麼成交的：
---   LIVE       盤中（9:00–13:30）以當下即時成交價成交。決策當下不知道後續走勢，無前視。
---   CLOSE_LATE 當天沒跑到（斷線/電腦沒開），晚間補跑、以當日收盤價成交。
---              **這種成交帶有前視**：下決策時全天走勢已經看得到。
--- 兩種分開標記，任何人都能只取 LIVE 的部分重算績效。
+-- fill_mode 只允許 LIVE：盤中（9:00–13:30）以當下即時成交價成交。
 CREATE TABLE IF NOT EXISTS trades (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     date         TEXT    NOT NULL,              -- 成交日 YYYY-MM-DD
@@ -36,7 +32,7 @@ CREATE TABLE IF NOT EXISTS trades (
     shares       INTEGER NOT NULL CHECK (shares > 0),
     price        REAL    NOT NULL CHECK (price > 0),
     fill_mode    TEXT    NOT NULL DEFAULT 'LIVE'
-                 CHECK (fill_mode IN ('LIVE','CLOSE_LATE')),
+                 CHECK (fill_mode = 'LIVE'),
     price_source TEXT    NOT NULL,              -- 價格來自哪裡，驗證時比對用
     gross        REAL    NOT NULL,              -- 成交價金
     fee          REAL    NOT NULL,              -- 手續費
@@ -83,6 +79,18 @@ CREATE TABLE IF NOT EXISTS theses (
     outcome      TEXT                    -- 結案時回填：對了還是錯了、錯在哪
 );
 CREATE INDEX IF NOT EXISTS idx_theses_code ON theses(code);
+
+-- 論點調整採追加紀錄，保留修改前後值，避免事後改寫理由。
+CREATE TABLE IF NOT EXISTS thesis_revisions (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    thesis_id  INTEGER NOT NULL REFERENCES theses(id),
+    date       TEXT NOT NULL,
+    field      TEXT NOT NULL,
+    old_value  TEXT,
+    new_value  TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+);
+CREATE INDEX IF NOT EXISTS idx_thesis_revisions_thesis ON thesis_revisions(thesis_id, id);
 
 -- 每日決策紀錄。**包含「決定不動」**——沒交易的日子也要留下理由，
 -- 否則事後無法分辨「判斷正確」與「根本沒判斷」。
@@ -210,6 +218,19 @@ def connect(path: Path | str | None = None) -> sqlite3.Connection:
 def init(path: Path | str | None = None, *, initial_cash: float | None = None) -> sqlite3.Connection:
     """建立結構並寫入初始 meta（可重複執行，不會覆蓋既有資料）。"""
     conn = connect(path)
+    # v1 曾允許 CLOSE_LATE。正式比賽前若帳本尚無成交，重建空表；
+    # 已有成交則停止，避免靜默改動歷史。
+    old = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='trades'").fetchone()
+    if old and "CLOSE_LATE" in (old["sql"] or ""):
+        count = conn.execute("SELECT COUNT(*) n FROM trades").fetchone()["n"]
+        if count:
+            raise RuntimeError("舊帳本含成交且允許 CLOSE_LATE；需人工稽核後才能遷移")
+        conn.commit()
+        conn.execute("PRAGMA foreign_keys = OFF")
+        conn.execute("DROP TABLE trades")
+        conn.commit()
+        conn.execute("PRAGMA foreign_keys = ON")
     conn.executescript(SCHEMA)
     cash = config.INITIAL_CASH if initial_cash is None else initial_cash
     defaults = {
@@ -221,6 +242,8 @@ def init(path: Path | str | None = None, *, initial_cash: float | None = None) -
     }
     for k, v in defaults.items():
         conn.execute("INSERT OR IGNORE INTO meta(key, value) VALUES (?, ?)", (k, v))
+    conn.execute("UPDATE meta SET value=? WHERE key='schema_version'", (str(SCHEMA_VERSION),))
+    conn.execute("UPDATE meta SET value=? WHERE key='start_date'", (config.START_DATE,))
     conn.commit()
     return conn
 

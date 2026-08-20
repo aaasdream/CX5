@@ -15,7 +15,8 @@
     python pt.py event 2026-08-26 "NVIDIA FY27Q2 財報" --importance 5
     python pt.py mark                     寫入當日淨值快照
     python pt.py report                   產生 index.html / data.json
-    python pt.py daily                    sync + mark + report 一次做完
+    python pt.py record                   產生不可覆寫的每日紀錄與 CSV 稽核檔
+    python pt.py daily                    sync + mark + record + report 一次做完
 
 每個指令的 --help 都有說明。
 """
@@ -31,7 +32,7 @@ if hasattr(sys.stdout, "reconfigure"):          # Windows 主控台預設 cp950�
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 
-from paper import config, db, journal, ledger, market, report  # noqa: E402
+from paper import audit, config, db, journal, ledger, market, report  # noqa: E402
 
 # 導向檔案或被其他程式擷取時關掉色碼，免得日誌裡塞滿跳脫序列
 if sys.stdout.isatty():
@@ -117,7 +118,7 @@ def cmd_buy(args, conn):
         print(f"{DIM}已建立論點 #{thesis_id}{OFF}")
     try:
         t = ledger.buy(conn, args.code, args.shares, args.reason,
-                       thesis_id=thesis_id, force=args.force)
+                       thesis_id=thesis_id)
     except market.MarketClosed as e:
         print(f"{RED}休市中，不能交易{OFF}")
         print(f"  {e}")
@@ -128,7 +129,6 @@ def cmd_buy(args, conn):
         return 1
     except ledger.RiskViolation as e:
         print(f"{RED}風控擋下：{e}{OFF}")
-        print(f"{DIM}確定要做就加 --force（覆蓋原因會記進成交紀錄）{OFF}")
         return 1
     print(f"{RED}買進{OFF} {t['name']} {t['code']}  {t['shares']:,} 股 @ {t['price']:,.2f}")
     print(f"  價金 {t['gross']:,.0f} + 手續費 {t['fee']:,.0f} = 實付 {t['net']:,.0f}")
@@ -250,11 +250,20 @@ def cmd_report(args, conn):
     print(f"       {js}")
 
 
+def cmd_record(args, conn):
+    date = args.date or market.today()
+    path = audit.write_daily_record(conn, date, correction=args.correction)
+    exported = audit.export_csv(conn)
+    print(f"已產生每日紀錄 {path}")
+    print(f"已匯出 {len(exported)} 份 CSV 稽核檔")
+
+
 def cmd_daily(args, conn):
     print(f"{BOLD}=== {market.today()} 每日更新 ==={OFF}\n")
     cmd_sync(argparse.Namespace(start=args.start, lookback=10), conn)
     print()
     cmd_mark(argparse.Namespace(date=args.date, note=None), conn)
+    cmd_record(argparse.Namespace(date=args.date, correction=False), conn)
     cmd_report(argparse.Namespace(date=args.date), conn)
     print()
     cmd_status(args, conn)
@@ -282,7 +291,6 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("code")
     s.add_argument("shares", type=int)
     s.add_argument("--reason", required=True, help="為什麼是今天、為什麼是這檔")
-    s.add_argument("--force", action="store_true", help="覆蓋風控上限")
     s.add_argument("--thesis-id", type=int, help="掛到既有論點")
     s.add_argument("--thesis-title", help="同時建立新論點：一句話的買進理由")
     s.add_argument("--rationale", help="論點完整論證")
@@ -372,7 +380,13 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--date")
     s.set_defaults(fn=cmd_report)
 
-    s = sub.add_parser("daily", help="sync + mark + report")
+    s = sub.add_parser("record", help="建立不可覆寫的每日 Markdown 與 CSV 稽核檔")
+    s.add_argument("--date")
+    s.add_argument("--correction", action="store_true",
+                   help="不覆寫原紀錄，另建 correction-NN 修正檔")
+    s.set_defaults(fn=cmd_record)
+
+    s = sub.add_parser("daily", help="sync + mark + record + report")
     s.add_argument("--start", default="2026-06-01")
     s.add_argument("--date")
     s.set_defaults(fn=cmd_daily)

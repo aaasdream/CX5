@@ -65,10 +65,11 @@ python pt.py decision --code 2454 --action HOLD --reason "..."   # 不動也要�
 python pt.py news --title "..." --summary "..." --source ... --importance 4
 python pt.py brief --stance "..." --macro "..." --outlook "..."
 python pt.py mark               # 寫入當日淨值快照
+python pt.py record             # 不可覆寫的每日 Markdown + CSV 稽核資料
 python pt.py report             # 產生 index.html 與 data.json
 ```
 
-`python pt.py daily` 會把 sync / mark / report 一次做完。
+`python pt.py daily` 會把 sync / mark / record / report 一次做完。
 
 每天結束後把 `db/portfolio.db`、`data.json`、`index.html` 一起 commit。
 **git 的時間戳就是「判斷寫在結果之前」的證明**，這是整個實驗可信度的基礎。
@@ -94,12 +95,11 @@ python pt.py report             # 產生 index.html 與 data.json
 
 | 限制 | 值 |
 |---|---|
-| 單一個股佔總資產 | ≤ 25% |
-| 單筆進場佔總資產 | ≤ 15% |
-| 現金水位 | ≥ 10% |
+| 單一個股佔總資產 | ≤ 12% |
+| 單筆進場佔總資產 | ≤ 10% |
+| 常態現金水位 | ≥ 20% |
 
-違反時 `buy()` 會拋 `RiskViolation`。可以用 `--force` 覆蓋，
-但**覆蓋的事實會被寫進該筆交易的理由欄位**，事後看得見。
+違反時 `buy()` 會拋 `RiskViolation`；正式競賽沒有覆蓋參數。
 
 這些數字是針對賽制的不對稱性訂的：**腰斬即出局**，
 意味著破產風險不是可以用報酬率補償的東西。
@@ -112,6 +112,8 @@ python pt.py report             # 產生 index.html 與 data.json
 stock/
   pt.py               每日操作的命令列介面
   audit.py            獨立稽核器（給驗證方用）
+  audit/*.csv         人類可讀、可重算的資料表匯出
+  records/            不可覆寫的每日決策紀錄
   RULES.md            賽制規則書
   index.html          產生的成果頁面（GitHub Pages 服務這支）
   data.json           同樣內容的機器可讀版本

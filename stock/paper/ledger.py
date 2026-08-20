@@ -15,7 +15,7 @@ from . import config, db, fees, market
 
 
 class RiskViolation(Exception):
-    """觸犯自訂風控上限。可用 force=True 明確覆蓋（覆蓋這件事會記進理由裡）。"""
+    """觸犯自訂風控上限；正式競賽不提供略過入口。"""
 
 
 # ── 讀取 ────────────────────────────────────────────────────────────
@@ -103,23 +103,22 @@ def check_buy_limits(conn: sqlite3.Connection, code: str, net_cost: float) -> li
 
 # ── 寫入 ────────────────────────────────────────────────────────────
 def buy(conn: sqlite3.Connection, code: str, shares: int, reason: str, *,
-        thesis_id: int | None = None, force: bool = False,
-        now: dt.datetime | None = None) -> dict:
+        thesis_id: int | None = None, now: dt.datetime | None = None) -> dict:
     """買進並更新現金與持倉，回傳成交明細。
 
     **成交價不由呼叫端指定**，一律由 market.execution_quote 依當下時段
     取公開報價。沒有這條限制，帳本就沒有可稽核性可言。
     """
+    if shares <= 0:
+        raise ValueError("買進股數必須大於 0")
     q = market.execution_quote(conn, code, now)
     price, date = q["price"], q["date"]
     name = market.stock_name(code)
     c = fees.compute("BUY", price, shares)
 
     problems = check_buy_limits(conn, code, c.net)
-    if problems and not force:
-        raise RiskViolation("；".join(problems))
     if problems:
-        reason = f"[已覆蓋風控: {'；'.join(problems)}] {reason}"
+        raise RiskViolation("；".join(problems))
 
     new_cash = cash(conn) - c.net
     cur = conn.execute(
@@ -154,6 +153,8 @@ def buy(conn: sqlite3.Connection, code: str, shares: int, reason: str, *,
 def sell(conn: sqlite3.Connection, code: str, shares: int, reason: str, *,
          close_thesis: str | None = None, now: dt.datetime | None = None) -> dict:
     """賣出並結算已實現損益。成交價同樣只能來自 execution_quote。"""
+    if shares <= 0:
+        raise ValueError("賣出股數必須大於 0")
     p = position(conn, code)
     if not p:
         raise ValueError(f"沒有持有 {code}")
@@ -196,7 +197,7 @@ def sell(conn: sqlite3.Connection, code: str, shares: int, reason: str, *,
 
 
 def snapshot(conn: sqlite3.Connection, date: str, note: str | None = None) -> dict:
-    """寫入當日淨值快照（含與大盤的對照）。可重複執行，同一天會被覆蓋。"""
+    """寫入衍生淨值快照；Git 中每日 Markdown 不可覆寫。"""
     v = valuation(conn, date=date)
     initial = v["initial_cash"]
 

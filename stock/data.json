@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-20 23:15:40",
+  "generated_at": "2026-08-20 23:24:16",
   "as_of": "2026-08-20",
   "account": {
     "initial_cash": 500000.0,
@@ -11,7 +11,7 @@
     "fees_cum": 0.0,
     "cum_return_pct": 0.0,
     "cash_pct": 100.0,
-    "start_date": "2026-08-20",
+    "start_date": "2026-08-21",
     "trade_count": 0,
     "closed_count": 0,
     "win_count": 0,
@@ -3650,9 +3650,9 @@
     ]
   },
   "limits": {
-    "max_position_pct": 25.0,
-    "max_new_buy_pct": 15.0,
-    "min_cash_pct": 10.0,
+    "max_position_pct": 12.0,
+    "max_new_buy_pct": 10.0,
+    "min_cash_pct": 20.0,
     "fee_rate": 0.001425,
     "fee_discount": 0.6,
     "fee_min": 20.0,
