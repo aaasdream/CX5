@@ -148,7 +148,8 @@ def buy(conn: sqlite3.Connection, code: str, shares: int, reason: str, *,
     conn.commit()
     return {"trade_id": trade_id, "code": code, "name": name, "side": "BUY",
             "shares": shares, "price": price, "gross": c.gross, "fee": c.fee,
-            "tax": c.tax, "net": c.net, "cash_after": new_cash}
+            "tax": c.tax, "net": c.net, "cash_after": new_cash,
+            "date": date, "filled_at": q["filled_at"], "price_source": q["source"]}
 
 
 def sell(conn: sqlite3.Connection, code: str, shares: int, reason: str, *,
@@ -192,7 +193,8 @@ def sell(conn: sqlite3.Connection, code: str, shares: int, reason: str, *,
     conn.commit()
     return {"trade_id": trade_id, "code": code, "name": p["name"], "side": "SELL",
             "shares": shares, "price": price, "gross": c.gross, "fee": c.fee,
-            "tax": c.tax, "net": c.net, "realized_pnl": realized, "cash_after": new_cash}
+            "tax": c.tax, "net": c.net, "realized_pnl": realized, "cash_after": new_cash,
+            "date": date, "filled_at": q["filled_at"], "price_source": q["source"]}
 
 
 def snapshot(conn: sqlite3.Connection, date: str, note: str | None = None) -> dict:
