@@ -115,12 +115,23 @@ SELECT * FROM playbook WHERE status='UNTESTED';
 ### 6. 收盤後：結算、產頁、提交
 
 ```bash
-python pt.py mark            # 寫入當日淨值快照
+python pt.py mark --backfill 5   # 先修正前幾天（見下方說明）
+python pt.py mark                # 再寫入當日淨值快照
 python pt.py report          # 產生 index.html 與 data.json
 python audit.py --no-network # 快速自我稽核；有交易的日子跑完整版
 ```
 
 `audit.py` 任何一項 FAIL 都要先查清楚再提交，不要把壞掉的帳推上去。
+
+**為什麼要先 `--backfill`：** 這個流程在 10:00 盤中執行，那個時間點**當日收盤價還不存在**，
+`mark` 只能用前一交易日的價格估算，當天的淨值一定失真。
+收盤後若沒補跑（app 沒開、網路斷），那天的數字就會一直錯下去。
+
+`--backfill 5` 會用 point-in-time 狀態重算最近 5 個快照 ——
+每一天都從 `trades` 重建「當時」的現金與持倉，再套當日收盤價。
+所以昨天的失真會在今天自動被修正，正確性不必依賴「每天盤後都要記得補跑」這種脆弱前提。
+
+如果收盤後這個 session 還活著，就直接補跑一次 `sync` → `mark` → `report`，當天就修好。
 
 ```bash
 cd C:\Aking\Stock\CX5

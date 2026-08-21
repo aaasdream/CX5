@@ -197,9 +197,78 @@ def sell(conn: sqlite3.Connection, code: str, shares: int, reason: str, *,
             "date": date, "filled_at": q["filled_at"], "price_source": q["source"]}
 
 
+def state_as_of(conn: sqlite3.Connection, date: str) -> dict:
+    """從 trades 重建「截至 date 當日收盤時」的現金與持倉。
+
+    存在的理由是一個真實踩過的坑：早期版本的 snapshot() 直接用
+    `positions` 表（也就是**今天**的持倉）去套歷史價格重算舊快照，
+    結果 8/20（當時還空手）被算成持有 8/21 才買進的部位。
+
+    歷史淨值曲線是這場實驗的核心證據，被今天的部位污染就毀了。
+    重算任何一天，都必須先把那一天當時的帳戶狀態還原出來。
+    """
+    initial = float(db.get_meta(conn, "initial_cash", str(config.INITIAL_CASH)))
+    cash_ = initial
+    book: dict[str, dict] = {}
+    realized = 0.0
+    fees_paid = 0.0
+
+    for t in conn.execute(
+            "SELECT * FROM trades WHERE date <= ? ORDER BY date, id", (date,)):
+        b = book.setdefault(t["code"], {"name": t["name"], "shares": 0, "cost": 0.0})
+        fees_paid += t["fee"] + t["tax"]
+        if t["side"] == "BUY":
+            cash_ -= t["net"]
+            b["shares"] += t["shares"]
+            b["cost"] += t["net"]
+        else:
+            cash_ += t["net"]
+            avg = b["cost"] / b["shares"] if b["shares"] else 0.0
+            realized += t["net"] - avg * t["shares"]
+            b["cost"] -= avg * t["shares"]
+            b["shares"] -= t["shares"]
+
+    holdings = []
+    for code, b in book.items():
+        if b["shares"] <= 0:
+            continue
+        holdings.append({"code": code, "name": b["name"], "shares": b["shares"],
+                         "total_cost": b["cost"],
+                         "avg_cost": b["cost"] / b["shares"]})
+    return {"cash": cash_, "positions": holdings, "realized_pnl_cum": realized,
+            "fees_cum": fees_paid, "initial_cash": initial}
+
+
+def valuation_as_of(conn: sqlite3.Connection, date: str) -> dict:
+    """把 state_as_of 的持倉用該日（或之前最近）收盤價估值。"""
+    st = state_as_of(conn, date)
+    rows, mkt_value, cost_total = [], 0.0, 0.0
+    for p in st["positions"]:
+        q = market.last_close(conn, p["code"], on_or_before=date)
+        price = q[1] if q else p["avg_cost"]
+        value = price * p["shares"]
+        pnl = value - p["total_cost"]
+        rows.append({**p, "price": price, "price_date": q[0] if q else None,
+                     "market_value": value, "unrealized_pnl": pnl,
+                     "unrealized_pct": (pnl / p["total_cost"] * 100) if p["total_cost"] else 0.0})
+        mkt_value += value
+        cost_total += p["total_cost"]
+    equity = st["cash"] + mkt_value
+    initial = st["initial_cash"]
+    return {**st, "date": date, "positions": rows, "positions_value": mkt_value,
+            "positions_cost": cost_total, "total_equity": equity,
+            "unrealized_pnl": mkt_value - cost_total,
+            "cum_return_pct": (equity / initial - 1) * 100 if initial else 0.0,
+            "cash_pct": (st["cash"] / equity * 100) if equity else 0.0}
+
+
 def snapshot(conn: sqlite3.Connection, date: str, note: str | None = None) -> dict:
-    """寫入當日淨值快照（含與大盤的對照）。可重複執行，同一天會被覆蓋。"""
-    v = valuation(conn, date=date)
+    """寫入當日淨值快照（含與大盤的對照）。可重複執行，同一天會被覆蓋。
+
+    用 point-in-time 狀態而非目前持倉，因此重算歷史任一天都會得到
+    當時真正的淨值，不會被之後才建立的部位污染。
+    """
+    v = valuation_as_of(conn, date)
     initial = v["initial_cash"]
 
     twii = conn.execute(

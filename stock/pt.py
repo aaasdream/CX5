@@ -235,6 +235,9 @@ def cmd_event(args, conn):
 
 
 def cmd_mark(args, conn):
+    if args.backfill:
+        _backfill(conn, args.backfill)
+        return
     date = args.date or market.today()
     s = ledger.snapshot(conn, date, note=args.note)
     line = (f"{date} 快照：總資產 {s['total_equity']:,.0f}  "
@@ -242,6 +245,31 @@ def cmd_mark(args, conn):
     if s["twii_cum_pct"] is not None:
         line += f"  大盤同期 {s['twii_cum_pct']:+.2f}%"
     print(line)
+
+
+def _backfill(conn, days: int) -> None:
+    """重算最近 N 天的淨值快照。
+
+    存在的理由：每日流程在 10:01 盤中執行，當下**當日收盤價還不存在**，
+    snapshot 只能用前一交易日的價格估算，淨值必然失真。
+    收盤後若沒補跑（app 沒開、網路斷），那天的淨值就會一直錯下去。
+
+    隔天 sync 完當日收盤後跑這個，前面幾天會自動被修正 ——
+    這樣正確性不必依賴「每天盤後都要記得補跑」這種脆弱的前提。
+    """
+    rows = conn.execute(
+        "SELECT date, total_equity FROM snapshots ORDER BY date DESC LIMIT ?",
+        (days,)).fetchall()
+    if not rows:
+        print(f"{DIM}沒有可重算的快照{OFF}")
+        return
+    print(f"{BOLD}重算最近 {len(rows)} 個快照{OFF}")
+    for r in reversed(rows):
+        before = r["total_equity"]
+        s = ledger.snapshot(conn, r["date"])
+        diff = s["total_equity"] - before
+        flag = f"{_c(diff)}修正 {diff:+,.0f}{OFF}" if abs(diff) >= 1 else f"{DIM}無變化{OFF}"
+        print(f"  {r['date']}  {s['total_equity']:>12,.0f}  {flag}")
 
 
 def cmd_report(args, conn):
@@ -254,7 +282,9 @@ def cmd_daily(args, conn):
     print(f"{BOLD}=== {market.today()} 每日更新 ==={OFF}\n")
     cmd_sync(argparse.Namespace(start=args.start, lookback=10), conn)
     print()
-    cmd_mark(argparse.Namespace(date=args.date, note=None), conn)
+    # 先補算舊快照：昨天若在盤中結算，用的是前天的價格，現在才拿得到正確收盤
+    cmd_mark(argparse.Namespace(date=None, note=None, backfill=5), conn)
+    cmd_mark(argparse.Namespace(date=args.date, note=None, backfill=None), conn)
     cmd_report(argparse.Namespace(date=args.date), conn)
     print()
     cmd_status(args, conn)
@@ -366,6 +396,8 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("mark", help="寫入當日淨值快照")
     s.add_argument("--date")
     s.add_argument("--note")
+    s.add_argument("--backfill", type=int, metavar="N",
+                   help="改為重算最近 N 個快照（修正盤中結算時價格未到位造成的失真）")
     s.set_defaults(fn=cmd_mark)
 
     s = sub.add_parser("report", help="產生網頁")
