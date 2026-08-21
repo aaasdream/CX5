@@ -1,0 +1,2 @@
+﻿date,cash,positions_value,total_equity,unrealized_pnl,realized_pnl_cum,fees_cum,day_return_pct,cum_return_pct,twii_close,twii_cum_pct,note
+2026-08-20,500000.0,0.0,500000.0,0.0,0.0,0.0,,0.0,44933.73828125,0.0,實驗建置日，休市未交易
